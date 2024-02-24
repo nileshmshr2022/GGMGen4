@@ -1,18 +1,41 @@
-import os
-import schedule
 import time
-from datetime import datetime
+import servicemanager
+import win32event
+import win32service
 
-def log_system_time():
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "system_time_log.txt")
-    with open(log_path, "a") as log_file:
-        log_file.write(f"{current_time}\n")
-    print(f"Logged system time: {current_time}")
+def check_system_time():
+    # Your logic to check system time and perform any actions
+    print("Current time:", time.strftime("%H:%M:%S"))
 
-# Schedule the function to run every hour
-schedule.every().hour.do(log_system_time)
+def service_main():
+    servicemanager.LogMsg(servicemanager.EVENTLOG_INFORMATION_TYPE,
+                          servicemanager.PYS_SERVICE_STARTED,
+                          ('TimeLogService', ''))
 
-while True:
-    schedule.run_pending()
-    time.sleep(1)
+    while True:
+        check_system_time()
+        # Adjust sleep time as needed
+        time.sleep(3600)  # Sleep for one hour
+
+class TimeLogService(win32serviceutil.ServiceFramework):
+    _svc_name_ = 'TimeLogService'
+    _svc_display_name_ = 'Time Log Service'
+
+    def __init__(self, args):
+        win32serviceutil.ServiceFramework.__init__(self, args)
+        self.hWaitStop = win32event.CreateEvent(None, 0, 0, None)
+
+    def SvcStop(self):
+        self.ReportServiceStatus(win32service.SERVICE_STOP_PENDING)
+        win32event.SetEvent(self.hWaitStop)
+
+    def SvcDoRun(self):
+        service_main()
+
+if __name__ == '__main__':
+    if len(sys.argv) == 1:
+        servicemanager.Initialize()
+        servicemanager.PrepareToHostSingle(TimeLogService)
+        servicemanager.StartServiceCtrlDispatcher()
+    else:
+        win32serviceutil.HandleCommandLine(TimeLogService)
