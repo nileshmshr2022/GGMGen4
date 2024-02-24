@@ -1,6 +1,10 @@
 import subprocess
 import os
 
+
+def get_script_directory():
+    return os.path.dirname(os.path.abspath(__file__))
+
 def is_python_installed():
     """Checks if Python is installed and accessible in the PATH."""
     try:
@@ -38,21 +42,28 @@ def install_python(installer_path, arguments, log_path):
         print(f"Unexpected error: {e}")
 
 def install_pywin32(log_path):
-    """Attempts to install pywin32."""
+    script_directory = get_script_directory()
+    print("PYWIN32 path")
+    print(script_directory)
     try:
-        subprocess.run(["pip", "install", "pywin32"], check=True)
-        with open(log_path, "a") as log_file:
-            log_file.write("pywin32 installation successful!\n")
-        print("pywin32 installation successful!")
-    except subprocess.CalledProcessError as e:
-        with open(log_path, "a") as log_file:
-            log_file.write(f"pywin32 installation failed with error: {e}\n")
-        print(f"pywin32 installation failed with error: {e}")
+        process = subprocess.Popen(["pywin32-306-cp312-cp312-win_arm64.exe", "/quiet"], cwd=script_directory, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output, error = process.communicate()
+        if process.returncode == 0:
+            print("pywin32 installation successful!")
+        else:
+            print(f"pywin32 installation failed with error: {error.decode()}")
+    except FileNotFoundError:
+        print(f"pywin32 installer file not found in '{script_directory}'.")
 
 def main():
     # Replace with your actual installer path and arguments
-    installer_path = r"C:\Users\emb-nilemis\OneDrive - Embitel Technologies India Private Limited\Desktop\Work\GNN\python-3.11.8-amd64.exe"
+    script_directory = get_script_directory()
+    print("Python exe path")
+    print(script_directory)
+    installer_path = os.path.join(script_directory, "python-3.11.8-amd64.exe")
+    #installer_path = r"C:\Users\emb-nilemis\OneDrive - Embitel Technologies India Private Limited\Desktop\Work\GNN\python-3.11.8-amd64.exe"
     arguments = ["/quiet", "InstallAllUsers=1", "PrependPath=1", "Include_test=0"]
+
 
     # Check if Python is already installed
     python_path = is_python_installed()
